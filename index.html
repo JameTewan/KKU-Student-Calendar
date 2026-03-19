@@ -131,8 +131,15 @@
     </main>
 
     <script>
-        const ACTUAL_DATE = new Date();
-        const TODAY_STR = ACTUAL_DATE.toISOString().split('T')[0];
+        function getLocalDateStr(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        let ACTUAL_DATE = new Date();
+        let TODAY_STR = getLocalDateStr(ACTUAL_DATE);
         let selectedDateStr = TODAY_STR;
 
         // --- Student-Only Dataset ---
@@ -326,11 +333,29 @@
             document.getElementById('day-detail-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
 
-        window.onload = () => {
+        function updateTodayInfo() {
+            const now = new Date();
+            const nowStr = getLocalDateStr(now);
+            
+            // Update sidebar date text
             const opt = { day: 'numeric', month: 'long', year: 'numeric' };
-            document.getElementById('sidebar-today-str').innerText = ACTUAL_DATE.toLocaleDateString('th-TH', opt);
+            document.getElementById('sidebar-today-str').innerText = now.toLocaleDateString('th-TH', opt);
+            
+            // If date changed, refresh calendar
+            if (nowStr !== TODAY_STR) {
+                ACTUAL_DATE = now;
+                TODAY_STR = nowStr;
+                renderCalendar();
+            }
+        }
+
+        window.onload = () => {
+            updateTodayInfo();
             renderCalendar();
             showDayDetail(TODAY_STR, ACTUAL_DATE.getDate(), ACTUAL_DATE.getMonth(), ACTUAL_DATE.getFullYear());
+            
+            // Refresh every minute to catch date change at midnight
+            setInterval(updateTodayInfo, 60000);
         };
     </script>
 </body>
