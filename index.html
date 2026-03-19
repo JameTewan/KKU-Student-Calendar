@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ปฏิทินการศึกษา มข. 2569 (สำหรับนักศึกษา)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
+        .kku-red { background-color: #a73b24; }
+        .kku-text-red { color: #a73b24; }
+        .calendar-day { min-height: 100px; transition: all 0.2s ease-in-out; border-right: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; position: relative; }
+        .calendar-day:hover { background-color: #fffaf0; cursor: pointer; z-index: 5; box-shadow: inset 0 0 0 2px #fed7aa; }
+        .calendar-day.selected-day { border: 2px solid #a73b24 !important; background-color: #fff7ed; z-index: 10; }
+        .today-marker { background-color: #fef2f2; }
+        .today-badge { position: absolute; top: 4px; right: 4px; font-size: 9px; background: #a73b24; color: white; padding: 1px 5px; border-radius: 4px; font-weight: bold; }
+        
+        .event-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin: 1px; }
+        .dot-new { background-color: #f97316; } 
+        .dot-reg { background-color: #3b82f6; } 
+        .dot-activity { background-color: #10b981; }
+        .dot-holiday { background-color: #ef4444; }
+        
+        @keyframes bounce-small {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-2px); }
+        }
+        .selected-day { animation: bounce-small 0.5s ease-out; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="pb-12">
+
+    <!-- Header -->
+    <nav class="kku-red text-white p-4 shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <div class="bg-white p-1.5 rounded-xl shadow-md">
+                    <img src="https://reg.kku.ac.th/registrar/images/logo_kku.png" alt="KKU Logo" class="h-8 w-auto" onerror="this.src='https://placehold.co/40x40?text=KKU'">
+                </div>
+                <div>
+                    <h1 class="text-lg md:text-xl font-bold leading-none tracking-tight">ปฏิทินนักศึกษา 2569</h1>
+                    <p class="text-[10px] opacity-90 uppercase tracking-[0.2em] mt-1 font-medium">Khon Kaen University</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="goToToday()" class="bg-white/10 hover:bg-white text-white hover:text-red-800 px-5 py-2 rounded-xl text-sm font-bold transition-all border border-white/20 active:scale-90">วันนี้</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto mt-8 px-4">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Left: Calendar -->
+            <div class="lg:col-span-8 space-y-6">
+                <div class="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+                    <!-- Nav -->
+                    <div class="p-6 border-b flex flex-wrap justify-between items-center bg-slate-50/50 gap-4">
+                        <div class="flex items-center space-x-4">
+                            <button onclick="changeMonth(-1)" class="w-11 h-11 flex items-center justify-center hover:bg-white hover:shadow-md rounded-2xl transition-all active:scale-75 text-slate-600"><i class="fas fa-chevron-left"></i></button>
+                            <h2 id="month-display" class="text-2xl font-black text-slate-800 min-w-[200px] text-center">...</h2>
+                            <button onclick="changeMonth(1)" class="w-11 h-11 flex items-center justify-center hover:bg-white hover:shadow-md rounded-2xl transition-all active:scale-75 text-slate-600"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                        <div class="flex flex-wrap gap-3 p-2 bg-white rounded-2xl shadow-sm border border-slate-100 px-4">
+                            <div class="flex items-center text-[11px] font-bold text-slate-500"><span class="event-dot dot-new mr-2"></span> รับเข้าใหม่</div>
+                            <div class="flex items-center text-[11px] font-bold text-slate-500"><span class="event-dot dot-reg mr-2"></span> ลงทะเบียน</div>
+                            <div class="flex items-center text-[11px] font-bold text-slate-500"><span class="event-dot dot-activity mr-2"></span> กิจกรรม</div>
+                            <div class="flex items-center text-[11px] font-bold text-slate-500"><span class="event-dot dot-holiday mr-2"></span> สอบ/หยุด</div>
+                        </div>
+                    </div>
+
+                    <!-- Weekdays -->
+                    <div class="grid grid-cols-7 border-b text-center bg-white">
+                        <div class="py-4 text-xs font-black text-red-500 uppercase tracking-widest">อาทิตย์</div>
+                        <div class="py-4 text-xs font-black text-slate-400 uppercase tracking-widest">จันทร์</div>
+                        <div class="py-4 text-xs font-black text-slate-400 uppercase tracking-widest">อังคาร</div>
+                        <div class="py-4 text-xs font-black text-slate-400 uppercase tracking-widest">พุธ</div>
+                        <div class="py-4 text-xs font-black text-slate-400 uppercase tracking-widest">พฤหัสฯ</div>
+                        <div class="py-4 text-xs font-black text-slate-400 uppercase tracking-widest">ศุกร์</div>
+                        <div class="py-4 text-xs font-black text-blue-500 uppercase tracking-widest">เสาร์</div>
+                    </div>
+
+                    <!-- Grid -->
+                    <div id="calendar-grid" class="grid grid-cols-7 bg-slate-50/30">
+                        <!-- Days -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Details -->
+            <div class="lg:col-span-4 space-y-6">
+                <!-- Today Info -->
+                <div class="bg-white p-6 rounded-3xl shadow-lg border border-slate-100">
+                    <div class="flex items-center space-x-4">
+                        <div class="kku-red text-white p-4 rounded-2xl shadow-lg shadow-red-900/20">
+                            <i class="fas fa-clock text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">วันนี้</p>
+                            <h3 id="sidebar-today-str" class="text-lg font-bold text-slate-800">...</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Card -->
+                <div id="day-detail-card" class="bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden transform transition-all">
+                    <div id="detail-header" class="kku-red p-6 text-white">
+                        <p id="detail-date-label" class="text-[10px] opacity-80 uppercase tracking-widest font-bold">ข้อมูลวันที่เลือก</p>
+                        <h3 id="detail-date-title" class="text-2xl font-black mt-1 leading-tight">โปรดเลือกวัน</h3>
+                    </div>
+                    <div id="detail-content" class="p-6 min-h-[220px]">
+                        <!-- Content -->
+                    </div>
+                </div>
+
+                <!-- Quick Upcoming -->
+                <div class="bg-slate-900 rounded-3xl p-6 text-white shadow-xl">
+                    <h4 class="font-bold text-sm mb-4 flex items-center"><i class="fas fa-bolt text-yellow-400 mr-2"></i> กิจกรรมถัดไป</h4>
+                    <div id="upcoming-list" class="space-y-4">
+                        <!-- Upcoming -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const ACTUAL_DATE = new Date();
+        const TODAY_STR = ACTUAL_DATE.toISOString().split('T')[0];
+        let selectedDateStr = TODAY_STR;
+
+        // --- Student-Only Dataset ---
+        const events = [
+            // Semester 1
+            { date: "2026-03-16", end: "2026-03-20", title: "TCAS 1: รายงานตัวนักศึกษาใหม่", type: "new", link: "https://reg.kku.ac.th" },
+            { date: "2026-05-11", end: "2026-05-15", title: "TCAS 2: รายงานตัวนักศึกษาใหม่", type: "new", link: "https://reg.kku.ac.th" },
+            { date: "2026-06-04", end: "2026-06-09", title: "แจ้งความประสงค์ลงทะเบียนเรียน (ปี 2 ขึ้นไป)", type: "reg", link: "https://reg.kku.ac.th" },
+            { date: "2026-06-09", end: "2026-06-13", title: "TCAS 3: รายงานตัวนักศึกษาใหม่", type: "new", link: "https://reg.kku.ac.th" },
+            { date: "2026-06-12", end: "2026-06-17", title: "ลงทะเบียนเรียน & ชำระเงิน (นักศึกษาปัจจุบัน)", type: "reg", link: "https://reg.kku.ac.th" },
+            { date: "2026-06-13", end: "2026-06-14", title: "นักศึกษาใหม่เข้าหอพัก", type: "activity", link: "https://dorm.kku.ac.th" },
+            { date: "2026-06-18", title: "วันปฐมนิเทศนักศึกษาใหม่ 2569", type: "new" },
+            { date: "2026-06-19", end: "2026-06-21", title: "ลงทะเบียนเรียนนักศึกษาใหม่ (รหัส 69)", type: "new", link: "https://reg.kku.ac.th" },
+            { date: "2026-06-22", title: "วันเปิดเทอม (ภาคต้น) / เริ่มเรียนวันแรก", type: "activity" },
+            { date: "2026-06-22", end: "2026-07-01", title: "ลงทะเบียนล่าช้า / เพิ่ม-ลดรายวิชา", type: "reg", link: "https://reg.kku.ac.th" },
+            { date: "2026-07-23", title: "วันไหว้ครู (งดการเรียนการสอน)", type: "holiday" },
+            { date: "2026-08-24", end: "2026-08-28", title: "ช่วงสอบกลางภาค (ภาคต้น)", type: "holiday" },
+            { date: "2026-08-31", end: "2026-10-18", title: "ประเมินการสอนโดยนักศึกษา (ภาคต้น)", type: "activity", link: "https://reg.kku.ac.th" },
+            { date: "2026-10-18", title: "วันสุดท้ายของการเรียน (ภาคต้น)", type: "activity" },
+            { date: "2026-10-19", end: "2026-11-02", title: "ช่วงสอบปลายภาค (ภาคต้น)", type: "holiday" },
+            
+            // Semester 2
+            { date: "2026-10-26", end: "2026-10-31", title: "แจ้งความประสงค์ลงทะเบียน (ภาคปลาย)", type: "reg", link: "https://reg.kku.ac.th" },
+            { date: "2026-11-09", end: "2026-11-13", title: "ลงทะเบียนเรียน & ชำระเงิน (ภาคปลาย)", type: "reg", link: "https://reg.kku.ac.th" },
+            { date: "2026-11-16", title: "วันเปิดเทอม (ภาคปลาย) / เริ่มเรียน", type: "activity" },
+            { date: "2026-11-21", end: "2026-11-26", title: "งานสีฐานเฟสติวัล (ลอยกระทง มข.)", type: "activity" },
+            { date: "2026-11-24", title: "วันลอยกระทง (งดการเรียนการสอน)", type: "holiday" },
+            { date: "2027-01-18", end: "2027-01-22", title: "ช่วงสอบกลางภาค (ภาคปลาย)", type: "holiday" },
+            { date: "2027-01-25", title: "วันสถาปนามหาวิทยาลัย (งดเรียน/สอบ)", type: "holiday" },
+            { date: "2027-03-14", title: "วันสุดท้ายของการเรียน (ภาคปลาย)", type: "activity" },
+            { date: "2027-03-15", end: "2027-03-28", title: "ช่วงสอบปลายภาค (ภาคปลาย)", type: "holiday" },
+            
+            // Summer
+            { date: "2027-04-12", end: "2027-04-16", title: "ลงทะเบียนเรียน (ภาคพิเศษ)", type: "reg", link: "https://reg.kku.ac.th" },
+            { date: "2027-04-19", title: "วันเปิดเทอม (ภาคพิเศษ)", type: "activity" }
+        ];
+
+        let currentMonth = new Date(ACTUAL_DATE.getFullYear(), ACTUAL_DATE.getMonth(), 1);
+        const monthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendar-grid');
+            const monthDisplay = document.getElementById('month-display');
+            grid.innerHTML = '';
+
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+            monthDisplay.innerText = `${monthNames[month]} ${year + 543}`;
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            for (let i = 0; i < firstDay; i++) {
+                grid.innerHTML += `<div class="calendar-day bg-slate-50 opacity-20 border-r border-b border-slate-200"></div>`;
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayEvents = getEventsForDate(dateStr);
+                const isToday = dateStr === TODAY_STR;
+                const isSelected = dateStr === selectedDateStr;
+                
+                const dayCell = document.createElement('div');
+                dayCell.className = `calendar-day p-3 ${isToday ? 'today-marker' : ''} ${isSelected ? 'selected-day shadow-inner' : ''}`;
+                dayCell.id = `day-${dateStr}`;
+                dayCell.onclick = () => showDayDetail(dateStr, day, month, year);
+
+                let dotsHtml = '';
+                const types = [...new Set(dayEvents.map(e => e.type))];
+                types.forEach(type => {
+                    dotsHtml += `<span class="event-dot dot-${type} shadow-sm"></span>`;
+                });
+
+                dayCell.innerHTML = `
+                    <div class="text-sm font-black ${isToday ? 'kku-text-red' : 'text-slate-500'}">${day}</div>
+                    ${isToday ? '<span class="today-badge">วันนี้</span>' : ''}
+                    <div class="mt-2 flex flex-wrap gap-1">${dotsHtml}</div>
+                `;
+                grid.appendChild(dayCell);
+            }
+            updateUpcoming();
+        }
+
+        function getEventsForDate(dateStr) {
+            const targetDate = new Date(dateStr);
+            return events.filter(e => {
+                const start = new Date(e.date);
+                if (e.end) {
+                    const end = new Date(e.end);
+                    return targetDate >= start && targetDate <= end;
+                }
+                return dateStr === e.date;
+            });
+        }
+
+        function showDayDetail(dateStr, day, month, year) {
+            if (selectedDateStr) {
+                const prev = document.getElementById(`day-${selectedDateStr}`);
+                if (prev) prev.classList.remove('selected-day');
+            }
+            selectedDateStr = dateStr;
+            const current = document.getElementById(`day-${dateStr}`);
+            if (current) current.classList.add('selected-day');
+
+            const dayEvents = getEventsForDate(dateStr);
+            const title = document.getElementById('detail-date-title');
+            const content = document.getElementById('detail-content');
+
+            title.innerText = `${day} ${monthNames[month]} ${year + 543}`;
+
+            if (dayEvents.length > 0) {
+                content.innerHTML = dayEvents.map(e => `
+                    <div class="p-5 rounded-2xl bg-slate-50 border border-slate-100 mb-4 last:mb-0 transition-all hover:shadow-md">
+                        <div class="flex items-center space-x-2 mb-2">
+                            <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider text-white bg-${getTypeColor(e.type)}">
+                                ${getTypeName(e.type)}
+                            </span>
+                        </div>
+                        <p class="font-bold text-slate-800 text-sm leading-relaxed">${e.title}</p>
+                        ${e.link ? `
+                            <a href="${e.link}" target="_blank" class="mt-4 w-full flex items-center justify-center py-3 px-4 rounded-xl bg-slate-800 text-white text-[11px] font-bold hover:bg-slate-700 transition active:scale-95 shadow-lg shadow-slate-200">
+                                <i class="fas fa-external-link-alt mr-2"></i> ไปยังระบบ (REG KKU)
+                            </a>
+                        ` : `
+                            <button onclick="this.innerHTML='<i class=\'fas fa-check mr-2\'></i> บันทึกแล้ว'; this.classList.add('bg-green-100','text-green-700','border-green-200')" class="mt-4 w-full py-2.5 px-4 rounded-xl border border-slate-200 text-slate-500 text-[10px] font-bold hover:bg-white transition active:scale-95">
+                                <i class="fas fa-bell mr-2"></i> เตือนฉันเมื่อถึงวัน
+                            </button>
+                        `}
+                    </div>
+                `).join('');
+            } else {
+                content.innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-200">
+                            <i class="fas fa-calendar text-4xl"></i>
+                        </div>
+                        <p class="text-slate-400 text-sm font-medium">ไม่มีรายการสำหรับนักศึกษาในวันนี้</p>
+                    </div>
+                `;
+            }
+        }
+
+        function updateUpcoming() {
+            const list = document.getElementById('upcoming-list');
+            const sorted = events
+                .filter(e => new Date(e.date) >= ACTUAL_DATE || (e.end && new Date(e.end) >= ACTUAL_DATE))
+                .sort((a, b) => new Date(a.date) - new Date(b.date))
+                .slice(0, 5);
+
+            list.innerHTML = sorted.map(e => `
+                <div class="group cursor-pointer border-l-2 border-slate-700 pl-4 py-1 hover:border-yellow-400 transition-all" onclick="goToDate('${e.date}')">
+                    <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest group-hover:text-yellow-400">${formatDateShort(e.date)}</p>
+                    <p class="text-xs font-bold text-slate-300 group-hover:text-white transition-colors truncate">${e.title}</p>
+                </div>
+            `).join('');
+        }
+
+        function formatDateShort(dateStr) {
+            const d = new Date(dateStr);
+            return `${d.getDate()} ${monthNames[d.getMonth()].substring(0, 3)} ${d.getFullYear() + 543}`;
+        }
+
+        function getTypeColor(type) {
+            const colors = { 'new': 'orange-500', 'reg': 'blue-500', 'activity': 'emerald-500', 'holiday': 'red-500' };
+            return colors[type] || 'slate-500';
+        }
+
+        function getTypeName(type) {
+            const names = { 'new': 'นักศึกษาใหม่', 'reg': 'ลงทะเบียน', 'activity': 'กิจกรรม', 'holiday': 'สอบ/วันหยุด' };
+            return names[type] || 'ทั่วไป';
+        }
+
+        function changeMonth(delta) {
+            currentMonth.setMonth(currentMonth.getMonth() + delta);
+            renderCalendar();
+        }
+
+        function goToToday() {
+            currentMonth = new Date(ACTUAL_DATE.getFullYear(), ACTUAL_DATE.getMonth(), 1);
+            selectedDateStr = TODAY_STR;
+            renderCalendar();
+            showDayDetail(TODAY_STR, ACTUAL_DATE.getDate(), ACTUAL_DATE.getMonth(), ACTUAL_DATE.getFullYear());
+        }
+
+        function goToDate(dateStr) {
+            const d = new Date(dateStr);
+            currentMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+            selectedDateStr = dateStr;
+            renderCalendar();
+            showDayDetail(dateStr, d.getDate(), d.getMonth(), d.getFullYear());
+            document.getElementById('day-detail-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        window.onload = () => {
+            const opt = { day: 'numeric', month: 'long', year: 'numeric' };
+            document.getElementById('sidebar-today-str').innerText = ACTUAL_DATE.toLocaleDateString('th-TH', opt);
+            renderCalendar();
+            showDayDetail(TODAY_STR, ACTUAL_DATE.getDate(), ACTUAL_DATE.getMonth(), ACTUAL_DATE.getFullYear());
+        };
+    </script>
+</body>
+</html>
